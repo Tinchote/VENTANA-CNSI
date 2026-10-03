@@ -169,19 +169,20 @@
     if (code === 45 || code === 48) return '🌫️';
     if (code >= 51 && code <= 67) return '🌧';
     if (code >= 80 && code <= 82) return '🌧️';
-    if (code >= 95) return '⛈️';
+    if (code >= 95) return '⛈️️';
     return '☁️';
   }
 
-  // Viento de Río en San Isidro: Viene de Norte (0°) a SSE (158°)
   function isWindFromRiver(deg) {
     return (deg >= 0 && deg <= 158) || (deg >= 350);
   }
 
-  // Estimación armónica astronómica de marea para San Isidro (m)
+  // Estimación armónica astronómica calculada para la hora exacta (m)
   function getEstimatedTide(dateObj) {
     const epoch = new Date('2026-01-01T00:00:00Z').getTime();
     const hoursSinceEpoch = (dateObj.getTime() - epoch) / 3600000;
+    
+    // Armónicas semidiurnas (M2 12.42h, S2 12.00h)
     const m2 = 0.45 * Math.cos((2 * Math.PI * hoursSinceEpoch) / 12.42);
     const s2 = 0.15 * Math.cos((2 * Math.PI * hoursSinceEpoch) / 12.00);
     const level = 0.85 + m2 + s2;
@@ -218,12 +219,11 @@
 
     const dailyMap = {};
     hourly.time.forEach((t, index) => {
-      // Agrupamos por la fecha exacta local "YYYY-MM-DD"
       const dateKey = t.split('T')[0];
       const hour = parseInt(t.split('T')[1].split(':')[0], 10);
+      const [year, month, day] = dateKey.split('-').map(Number);
 
       if (!dailyMap[dateKey]) {
-        const [year, month, day] = dateKey.split('-').map(Number);
         dailyMap[dateKey] = { 
           dateObj: new Date(year, month - 1, day), 
           hours: {} 
@@ -231,11 +231,14 @@
       }
 
       if (targetHours.includes(hour)) {
+        // Creamos el objeto Date con la hora exacta del casillero
+        const slotDateObj = new Date(year, month - 1, day, hour);
+
         let tideVal = null;
         if (tideData && tideData.hourly && tideData.hourly.sea_level && tideData.hourly.sea_level[index] !== null) {
           tideVal = tideData.hourly.sea_level[index].toFixed(1) + "m";
         } else {
-          tideVal = getEstimatedTide(dailyMap[dateKey].dateObj);
+          tideVal = getEstimatedTide(slotDateObj);
         }
 
         dailyMap[dateKey].hours[hour] = {
